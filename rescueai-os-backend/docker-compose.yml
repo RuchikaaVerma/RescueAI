@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rescueai-postgres
+    environment:
+      POSTGRES_DB: rescueai_os
+      POSTGRES_USER: rescueai
+      POSTGRES_PASSWORD: rescueai
+    ports:
+      - "5432:5432"
+    volumes:
+      - rescueai_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rescueai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: rescueai-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: rescueai-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: rescueai_os
+      DB_USER: rescueai
+      DB_PASSWORD: rescueai
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_PORT: 8081
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_API_KEY: ${AI_API_KEY:-changeme}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3}
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-secret-in-production-please}
+    ports:
+      - "8081:8081"
+
+volumes:
+  rescueai_pg_data:

@@ -1,0 +1,289 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@theme {
+  /* ---- Light theme: white / red / rose palette ---- */
+  --color-void: #ffffff;
+  --color-charcoal: #fafafa;
+  --color-steel: #f5f5f5;
+  --color-steel-2: #f0f0f0;
+  --color-line: #e8e8e8;
+  --color-line-bright: #d0d0d0;
+  --color-ash: #6b7280;
+  --color-ash-dim: #9ca3af;
+  --color-bone: #1a1a1a;
+  --color-bone-dim: #374151;
+
+  --color-signal: #dc2626;
+  --color-signal-bright: #ef4444;
+  --color-signal-dim: #fca5a5;
+  --color-signal-glow: #ff6b6b;
+
+  /* New light theme accents */
+  --color-rose-light: #fff1f2;
+  --color-rose-mid: #ffd7d9;
+  --color-rose-border: #fecdd3;
+
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 10% 0%, rgba(220, 38, 38, 0.06), transparent 45%),
+    radial-gradient(circle at 90% 100%, rgba(220, 38, 38, 0.04), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 241, 242, 0.5), transparent 70%);
+  background-attachment: fixed;
+}
+
+::selection { background: var(--color-signal); color: #ffffff; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-steel); }
+::-webkit-scrollbar-thumb { background: var(--color-rose-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-signal-dim); }
+
+:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========== HUD Panels — light card style ========== */
+.hud-panel {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+.hud-panel::before, .hud-panel::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: opacity 200ms ease, width 200ms ease, height 200ms ease;
+  pointer-events: none;
+}
+.hud-panel::before { top: -1px; left: -1px; border-top: 2px solid var(--color-signal); border-left: 2px solid var(--color-signal); }
+.hud-panel::after  { top: -1px; right: -1px; border-top: 2px solid var(--color-signal); border-right: 2px solid var(--color-signal); }
+.hud-panel:hover::before, .hud-panel:hover::after { opacity: 1; width: 18px; height: 18px; }
+.hud-panel:hover {
+  border-color: var(--color-rose-border);
+  box-shadow: 0 4px 12px rgba(220,38,38,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+/* ========== Animated dot pulse ========== */
+.pulse-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-signal-bright);
+}
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: var(--color-signal-bright);
+  opacity: 0.4;
+  animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.5; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ========== Subtle grid texture (light) ========== */
+.grid-texture {
+  background-image:
+    linear-gradient(rgba(220,38,38,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220,38,38,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ========== Scanlines (light variant) ========== */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(220,38,38,0.02),
+    rgba(220,38,38,0.02) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* ========== Text utilities ========== */
+.text-glow-red  { text-shadow: 0 0 16px rgba(220,38,38,0.35); }
+.mono-tag       { font-family: var(--font-mono); letter-spacing: 0.06em; }
+
+/* ========== Floating card animation ========== */
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-float-up { animation: float-up 0.4s ease forwards; }
+
+/* ========== Shimmer loading ========== */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f5f5f5 25%, #ffe4e6 50%, #f5f5f5 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* ========== Sidebar nav active glow ========== */
+.nav-active-glow {
+  box-shadow: inset 3px 0 0 var(--color-signal);
+}
+
+/* ========== Hero gradient banner ========== */
+.hero-gradient {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffffff 50%, #fef2f2 100%);
+  border: 1px solid var(--color-rose-border);
+}
+
+/* ========== Red accent bar (top of stat cards) ========== */
+.stat-accent::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-signal), var(--color-signal-glow));
+  border-radius: 2px 2px 0 0;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.stat-accent:hover::before { opacity: 1; }
+
+/* ========== Animated background orbs ========== */
+@keyframes orb-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(20px, -15px) scale(1.05); }
+  66%  { transform: translate(-10px, 10px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: orb-drift 18s ease-in-out infinite;
+}
+.orb-1 {
+  width: 420px; height: 420px;
+  background: rgba(220,38,38,0.07);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+.orb-2 {
+  width: 320px; height: 320px;
+  background: rgba(253,164,175,0.1);
+  bottom: -80px; right: -80px;
+  animation-delay: -6s;
+}
+.orb-3 {
+  width: 240px; height: 240px;
+  background: rgba(220,38,38,0.05);
+  top: 50%; left: 60%;
+  animation-delay: -12s;
+}
+
+/* ========== Sidebar animated gradient border ========== */
+.sidebar-brand-glow {
+  background: linear-gradient(135deg, #fff1f2, #ffffff);
+  border: 1px solid var(--color-rose-border);
+  box-shadow: 0 0 20px rgba(220,38,38,0.08);
+}
+
+/* ========== Animated underline for nav items ========== */
+.nav-link-anim {
+  position: relative;
+  overflow: hidden;
+}
+.nav-link-anim::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--color-signal);
+  transition: width 220ms ease;
+}
+.nav-link-anim:hover::after { width: 100%; }
+
+/* ========== Badge / chip ========== */
+.badge-pulse {
+  animation: badge-pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes badge-pop {
+  0%   { transform: scale(0.8); }
+  100% { transform: scale(1); }
+}
+
+/* ========== Table row hover ========== */
+.row-hover {
+  transition: background 150ms ease;
+}
+.row-hover:hover {
+  background: var(--color-rose-light);
+}
+
+/* ========== Input light style ========== */
+.input-light {
+  background: #ffffff;
+  border: 1.5px solid var(--color-line);
+  color: var(--color-bone);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.input-light:focus {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+  outline: none;
+}
+.input-light::placeholder { color: var(--color-ash-dim); }
+
+/* ========== Button primary ========== */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-signal), #b91c1c);
+  color: #ffffff;
+  transition: box-shadow 180ms ease, transform 120ms ease;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(220,38,38,0.35);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  background: var(--color-steel);
+  color: var(--color-ash-dim);
+}
+
+/* ========== Ping animation for live status ========== */
+@keyframes ping-light {
+  0%   { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+  100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+}
+.ping-live { animation: ping-light 1.5s ease-out infinite; }
