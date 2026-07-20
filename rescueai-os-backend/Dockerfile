@@ -10,5 +10,12 @@ RUN mvn -B clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/rescueai-os-backend-*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Render injects PORT at runtime; Spring Boot reads SERVER_PORT
+# We also accept the explicit SERVER_PORT env var for docker-compose usage
+ENV SERVER_PORT=8081
+EXPOSE 8081
+
+ENTRYPOINT ["java", \
+  "-Dserver.port=${SERVER_PORT}", \
+  "-jar", "app.jar"]

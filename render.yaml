@@ -1,0 +1,91 @@
+databases:
+  - name: rescueai-postgres
+    databaseName: rescueai_os
+    user: rescueai
+    plan: free
+
+  - name: rescueai-redis
+    plan: free
+    ipAllowList: []
+
+services:
+  # ── Spring Boot Backend ──────────────────────────────────────────────
+  - type: web
+    name: rescueai-backend
+    runtime: docker
+    dockerfilePath: ./rescueai-os-backend/Dockerfile
+    dockerContext: ./rescueai-os-backend
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: rescueai-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: rescueai-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: rescueai-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: rescueai-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: rescueai-postgres
+          property: password
+      - key: REDIS_HOST
+        fromService:
+          name: rescueai-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: rescueai-redis
+          type: redis
+          property: port
+      # Set these manually in the Render dashboard:
+      - key: AI_PROVIDER
+        value: openai
+      - key: AI_API_KEY
+        sync: false          # Render will prompt you to enter this secret
+      - key: AI_BASE_URL
+        value: https://api.openai.com
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: JWT_SECRET
+        sync: false          # Enter a long random secret in dashboard
+      - key: JWT_EXPIRATION_MS
+        value: "86400000"
+      - key: SERVER_PORT
+        value: "8081"
+
+  # ── React Frontend (Static Site) ─────────────────────────────────────
+  - type: web
+    name: rescueai-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./rescueai-frontend/dist
+    rootDir: rescueai-frontend
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          name: rescueai-backend
+          type: web
+          property: host
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_WS_URL
+        fromService:
+          name: rescueai-backend
+          type: web
+          property: host
+          envVarKey: RENDER_EXTERNAL_URL
