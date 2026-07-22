@@ -7,14 +7,14 @@ import {
 import { useData } from '../context/DataContext';
 
 const NAV = [
-  { to: '/', label: 'Command Center', icon: LayoutDashboard, end: true },
-  { to: '/map', label: 'Live Map', icon: MapPin },
+  { to: '/',          label: 'Command Center',    icon: LayoutDashboard, end: true },
+  { to: '/map',       label: 'Live Map',          icon: MapPin },
   { to: '/incidents', label: 'Incident Timeline', icon: Activity },
-  { to: '/hospitals', label: 'Hospitals', icon: Hospital },
-  { to: '/volunteers', label: 'Volunteers', icon: Users },
-  { to: '/resources', label: 'Resources', icon: Package },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/alerts', label: 'Alerts', icon: Bell },
+  { to: '/hospitals', label: 'Hospitals',         icon: Hospital },
+  { to: '/volunteers',label: 'Volunteers',        icon: Users },
+  { to: '/resources', label: 'Resources',         icon: Package },
+  { to: '/analytics', label: 'Analytics',         icon: BarChart3 },
+  { to: '/alerts',    label: 'Alerts',            icon: Bell },
 ];
 
 function Clock() {
@@ -24,8 +24,9 @@ function Clock() {
     return () => clearInterval(t);
   }, []);
   return (
-    <span className="mono-tag text-xs" style={{ color: 'var(--color-ash)' }}>
-      {now.toUTCString().slice(17, 25)} UTC
+    <span className="mono-tag text-xs tabular-nums" style={{ color: 'var(--color-ash)' }}>
+      {now.toUTCString().slice(17, 25)}{' '}
+      <span style={{ color: 'var(--color-ash-dim)' }}>UTC</span>
     </span>
   );
 }
@@ -36,52 +37,68 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex relative" style={{ background: 'var(--color-void)' }}>
-      {/* Animated background orbs */}
+
+      {/* ── Animated background layer ── */}
+      <div className="animated-bg" />
+      <div className="mesh-bg" />
       <div className="orb orb-1" />
       <div className="orb orb-2" />
       <div className="orb orb-3" />
+      <div className="orb orb-4" />
 
-      {/* Sidebar */}
+      {/* ══════════ SIDEBAR ══════════ */}
       <aside
-        className={`shrink-0 flex flex-col relative z-10 transition-all duration-300 ${collapsed ? 'w-[68px]' : 'w-[240px]'}`}
+        className={`shrink-0 flex flex-col relative z-20 transition-all duration-300 ease-in-out ${
+          collapsed ? 'w-[68px]' : 'w-[240px]'
+        }`}
         style={{
-          background: 'linear-gradient(180deg, #ffffff 0%, #fff8f8 100%)',
-          borderRight: '1px solid var(--color-rose-border)',
-          boxShadow: '2px 0 12px rgba(220,38,38,0.06)',
+          background: 'rgba(255,255,255,0.93)',
+          backdropFilter: 'blur(28px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+          borderRight: '1px solid rgba(220,38,38,0.14)',
+          boxShadow: '4px 0 32px rgba(220,38,38,0.07)',
         }}
       >
-        {/* Brand */}
+        {/* ── Brand header ── */}
         <div
-          className="h-16 flex items-center gap-2.5 px-4 relative overflow-hidden"
-          style={{ borderBottom: '1px solid var(--color-rose-border)' }}
+          className="h-16 flex items-center gap-3 px-4 relative overflow-hidden shrink-0"
+          style={{
+            background: 'linear-gradient(135deg, rgba(220,38,38,0.06) 0%, transparent 60%)',
+            borderBottom: '1px solid rgba(220,38,38,0.12)',
+          }}
         >
-          {/* Animated brand background sweep */}
+          {/* Animated sweep on brand */}
           <div
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'linear-gradient(135deg, rgba(220,38,38,0.08) 0%, transparent 60%)',
+              background: 'linear-gradient(90deg, transparent, rgba(220,38,38,0.04), transparent)',
+              animation: 'scan-line 5s linear infinite',
             }}
           />
+
+          {/* Logo mark */}
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 relative"
-            style={{
-              background: 'linear-gradient(135deg, #dc2626, #ef4444)',
-              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
-            }}
+            className="brand-logo w-9 h-9 rounded-xl flex items-center justify-center shrink-0 relative"
           >
-            <Radio size={17} className="text-white" />
+            <Radio size={17} className="text-white" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
+            {/* Rotating ring */}
+            <div
+              className="absolute inset-[-4px] rounded-xl border border-red-400 opacity-30 spin-slow"
+              style={{ borderStyle: 'dashed' }}
+            />
           </div>
+
           {!collapsed && (
-            <div className="leading-tight overflow-hidden relative">
+            <div className="leading-tight overflow-hidden relative animate-fade-in">
               <div
                 className="font-display font-bold text-[15px] tracking-wide"
                 style={{ color: 'var(--color-bone)' }}
               >
-                RESCUE<span style={{ color: 'var(--color-signal)' }}>AI</span>
+                RESCUE<span className="text-shimmer-red">AI</span>
               </div>
               <div
                 className="mono-tag text-[9px] uppercase"
-                style={{ color: 'var(--color-ash-dim)', letterSpacing: '0.15em' }}
+                style={{ color: 'var(--color-ash-dim)', letterSpacing: '0.18em' }}
               >
                 Command OS
               </div>
@@ -89,45 +106,60 @@ export default function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-4 flex flex-col gap-1 px-2">
+        {/* ── Navigation ── */}
+        <nav className="flex-1 py-4 flex flex-col gap-0.5 px-2 overflow-y-auto">
           {NAV.map(({ to, label, icon: Icon, end }, i) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              style={{ animationDelay: `${i * 40}ms` }}
+              style={{ animationDelay: `${i * 45}ms` }}
               className={({ isActive }) =>
-                `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 relative animate-float-up ${
-                  isActive
-                    ? 'nav-active-glow'
-                    : 'hover:bg-rose-50'
-                }`
+                `nav-item-sweep group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
+                 transition-all duration-200 relative animate-float-up ${
+                   isActive ? 'nav-active-glow' : ''
+                 }`
               }
             >
               {({ isActive }) => (
                 <>
+                  {/* Active background */}
                   {isActive && (
                     <div
-                      className="absolute inset-0 rounded-lg"
+                      className="absolute inset-0 rounded-xl"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(220,38,38,0.08), rgba(220,38,38,0.04))',
-                        border: '1px solid rgba(220,38,38,0.15)',
+                        background: 'linear-gradient(135deg, rgba(220,38,38,0.09), rgba(220,38,38,0.04))',
+                        border: '1px solid rgba(220,38,38,0.18)',
                       }}
                     />
                   )}
+
+                  {/* Icon */}
                   <Icon
                     size={17}
-                    className="shrink-0 relative z-10 transition-colors duration-200"
-                    style={{ color: isActive ? 'var(--color-signal)' : 'var(--color-ash)' }}
+                    className="shrink-0 relative z-10 transition-all duration-200"
+                    style={{
+                      color: isActive ? 'var(--color-signal)' : 'var(--color-ash)',
+                      filter: isActive ? 'drop-shadow(0 0 6px rgba(220,38,38,0.35))' : 'none',
+                    }}
                   />
+
+                  {/* Label */}
                   {!collapsed && (
                     <span
-                      className="truncate relative z-10 font-medium"
-                      style={{ color: isActive ? 'var(--color-signal)' : 'var(--color-bone)' }}
+                      className="truncate relative z-10 font-medium transition-colors duration-200"
+                      style={{ color: isActive ? 'var(--color-signal)' : 'var(--color-bone-dim)' }}
                     >
                       {label}
                     </span>
+                  )}
+
+                  {/* Active right dot */}
+                  {isActive && (
+                    <span
+                      className="ml-auto relative z-10 w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: 'var(--color-signal)', boxShadow: '0 0 6px rgba(220,38,38,0.6)' }}
+                    />
                   )}
                 </>
               )}
@@ -135,16 +167,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* Collapse button */}
+        {/* ── Collapse button ── */}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="h-11 flex items-center justify-center transition-all duration-200 group"
+          className="h-11 flex items-center justify-center transition-all duration-200 group shrink-0"
           style={{
-            borderTop: '1px solid var(--color-rose-border)',
+            borderTop: '1px solid rgba(220,38,38,0.1)',
             color: 'var(--color-ash)',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-signal)'; e.currentTarget.style.background = 'var(--color-rose-light)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-ash)'; e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--color-signal)';
+            e.currentTarget.style.background = 'rgba(220,38,38,0.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--color-ash)';
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <ChevronLeft
             size={16}
@@ -153,17 +191,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </button>
       </aside>
 
-      {/* Main */}
+      {/* ══════════ MAIN CONTENT ══════════ */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Top header */}
+
+        {/* ── Top header ── */}
         <header
-          className="h-16 shrink-0 flex items-center justify-between px-6 backdrop-blur-sm"
-          style={{
-            background: 'rgba(255,255,255,0.85)',
-            borderBottom: '1px solid var(--color-rose-border)',
-            boxShadow: '0 1px 8px rgba(220,38,38,0.05)',
-          }}
+          className="header-glass h-16 shrink-0 flex items-center justify-between px-6 relative"
         >
+          {/* Left: status */}
           <div className="flex items-center gap-3">
             <span className="pulse-dot ping-live" />
             <span
@@ -172,26 +207,46 @@ export default function AppShell({ children }: { children: ReactNode }) {
             >
               {mode === 'live' ? 'Live Backend' : 'Demo Simulation'}
             </span>
-            <span style={{ color: 'var(--color-ash-dim)' }}>·</span>
+            <span style={{ color: 'var(--color-line-bright)' }}>|</span>
             <span
-              className={`mono-tag text-xs uppercase tracking-wider font-semibold`}
+              className="mono-tag text-xs uppercase tracking-wider font-semibold"
               style={{ color: wsState === 'connected' ? 'var(--color-signal)' : 'var(--color-ash)' }}
             >
-              WS {wsState}
+              WS{' '}
+              <span
+                style={{
+                  color: wsState === 'connected' ? 'var(--color-signal)' : 'var(--color-ash-dim)',
+                  textShadow: wsState === 'connected' ? '0 0 8px rgba(220,38,38,0.4)' : 'none',
+                }}
+              >
+                {wsState}
+              </span>
             </span>
           </div>
+
+          {/* Right: clock + avatar */}
           <div className="flex items-center gap-5">
             <Clock />
-            <div className="h-6 w-px" style={{ background: 'var(--color-line)' }} />
+            <div className="h-6 w-px" style={{ background: 'rgba(220,38,38,0.15)' }} />
             <div className="flex items-center gap-2.5">
+              {/* Avatar */}
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center mono-tag text-xs text-white font-bold"
-                style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center mono-tag text-xs text-white font-bold relative overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+                  boxShadow: '0 2px 10px rgba(220,38,38,0.35)',
+                }}
               >
-                CC
+                <span className="relative z-10">CC</span>
+                <div
+                  className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15), transparent)' }}
+                />
               </div>
               <div className="leading-tight hidden sm:block">
-                <div className="text-sm font-semibold" style={{ color: 'var(--color-bone)' }}>Command Center</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--color-bone)' }}>
+                  Command Center
+                </div>
                 <div className="mono-tag text-[10px]" style={{ color: 'var(--color-ash-dim)' }}>
                   Tenant: Coastal District
                 </div>
@@ -200,6 +255,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        {/* ── Page content ── */}
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
