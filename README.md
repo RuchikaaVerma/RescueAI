@@ -499,4 +499,9 @@ Connect to `/ws` and subscribe to:
 Pull requests are welcome. For major changes, please open an issue first to discuss the proposed change. Ensure any new code passes `npm run lint` and `npm run build` before submitting a PR.
 
 ---
+<img width="959" height="422" alt="image" src="https://github.com/user-attachments/assets/e2acac3a-be4d-40fc-8005-56b02b2c9f19" />
+
+<img width="959" height="433" alt="image" src="https://github.com/user-attachments/assets/58315e0c-5495-416c-8b3c-9a84dc8c3de3" />
+
+<img width="959" height="431" alt="image" src="https://github.com/user-attachments/assets/dee44f05-fdfb-4f79-a8ba-536ef53f67c9" />
 
