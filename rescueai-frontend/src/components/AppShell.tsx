@@ -2,9 +2,12 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, MapPin, Activity, Hospital, Users, Package,
-  BarChart3, Bell, Radio, ChevronLeft,
+  BarChart3, Bell, Radio, ChevronLeft, BellOff,
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import NotificationCenter from './NotificationCenter';
+import WeatherWidget from './WeatherWidget';
+import { requestNotificationPermission } from '../lib/notifications';
 
 const NAV = [
   { to: '/',          label: 'Command Center',    icon: LayoutDashboard, end: true },
@@ -32,8 +35,22 @@ function Clock() {
 }
 
 export default function AppShell({ children }: { children: ReactNode }) {
-  const { mode, wsState } = useData();
+  const { mode, wsState, notificationPermission } = useData();
   const [collapsed, setCollapsed] = useState(false);
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+
+  // Show notification prompt after 3 seconds if permission not yet decided
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (notificationPermission === 'default') setShowNotifPrompt(true);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [notificationPermission]);
+
+  async function enableNotifications() {
+    setShowNotifPrompt(false);
+    await requestNotificationPermission();
+  }
 
   return (
     <div className="min-h-screen flex relative" style={{ background: 'var(--color-void)' }}>
@@ -224,8 +241,32 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </span>
           </div>
 
-          {/* Right: clock + avatar */}
-          <div className="flex items-center gap-5">
+          {/* Right: weather + notif + clock + avatar */}
+          <div className="flex items-center gap-3">
+            <WeatherWidget />
+            <div className="h-6 w-px" style={{ background: 'rgba(220,38,38,0.15)' }} />
+            <NotificationCenter />
+            {showNotifPrompt && notificationPermission === 'default' && (
+              <button
+                onClick={enableNotifications}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] mono-tag transition-all hover:scale-105"
+                style={{
+                  background: 'rgba(37,99,235,0.08)',
+                  border: '1px solid rgba(37,99,235,0.2)',
+                  color: '#2563eb',
+                }}
+                title="Enable push notifications for critical alerts"
+              >
+                <Bell size={11} />
+                Enable Alerts
+              </button>
+            )}
+            {notificationPermission === 'denied' && (
+              <div className="hidden sm:flex items-center gap-1 text-[10px] mono-tag" style={{ color: 'var(--color-ash-dim)' }} title="Notifications blocked in browser settings">
+                <BellOff size={10} />
+              </div>
+            )}
+            <div className="h-6 w-px" style={{ background: 'rgba(220,38,38,0.15)' }} />
             <Clock />
             <div className="h-6 w-px" style={{ background: 'rgba(220,38,38,0.15)' }} />
             <div className="flex items-center gap-2.5">

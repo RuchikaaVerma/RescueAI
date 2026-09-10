@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { Send, AlertTriangle, Zap, Activity } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Send, AlertTriangle, Zap, Activity, Image, X, Sparkles } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { Panel, StatCard } from '../components/Panel';
 import AgentPipeline from '../components/AgentPipeline';
 import TacticalMap from '../components/TacticalMap';
 import { SeverityBadge, StatusPill } from '../components/Badges';
 import { IncidentApi } from '../lib/api';
-import { runPipelineDemo, makeIncident, DEMO_BOUNDS } from '../lib/mock';
+import { runPipelineDemo, makeIncident, DEMO_BOUNDS, simulateAgentOutput } from '../lib/mock';
+import { analyzeIncidentWithGemini, geminiToAgentSteps, isGeminiEnabled } from '../lib/gemini';
+import { AGENT_PIPELINE_ORDER } from '../types';
 import type { AgentName, AgentStepResult, IncidentResponse } from '../types';
 import { AGENT_LABELS } from '../types';
 
@@ -17,6 +19,9 @@ export default function Dashboard() {
   const [activeAgent, setActiveAgent] = useState<AgentName | null>(null);
   const [completed, setCompleted] = useState<Set<AgentName>>(new Set());
   const [steps, setSteps] = useState<AgentStepResult[]>([]);
+  const [aiPowered, setAiPowered] = useState(false);
+  const [mediaFile, setMediaFile] = useState<{ name: string; preview: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const critical = incidents.filter((i) => i.severityLevel === 'CRITICAL').length;
   const active = incidents.filter(
@@ -29,11 +34,22 @@ export default function Dashboard() {
       ).toFixed(0)
     : '—';
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setMediaFile({ name: file.name, preview: ev.target?.result as string });
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function submitReport() {
     if (!rawText.trim() || running) return;
     setRunning(true);
     setCompleted(new Set());
     setSteps([]);
+    setAiPowered(false);
 
     const lat = DEMO_BOUNDS.minLat + Math.random() * (DEMO_BOUNDS.maxLat - DEMO_BOUNDS.minLat);
     const lng = DEMO_BOUNDS.minLng + Math.random() * (DEMO_BOUNDS.maxLng - DEMO_BOUNDS.minLng);
@@ -48,27 +64,77 @@ export default function Dashboard() {
           setSteps((s) => [...s, step]);
           setCompleted((c) => new Set(c).add(step.agentName as AgentName));
         }
+        setRunning(false);
+        setRawText('');
+        setMediaFile(null);
+        return;
       } catch {
-        // fall through to demo simulation
+        // Fall through to demo/AI simulation
       }
-    } else {
-      const incident: IncidentResponse = makeIncident({
-        description: rawText.slice(0, 80),
-        latitude: lat,
-        longitude: lng,
-        status: 'REPORTED',
-      });
-      addIncident(incident);
-      for await (const step of runPipelineDemo(incident)) {
-        setActiveAgent(step.agentName as AgentName);
-        setSteps((s) => [...s, step]);
-        setCompleted((c) => new Set(c).add(step.agentName as AgentName));
+    }
+
+    // Try Gemini AI first
+    if (isGeminiEnabled) {
+      try {
+        const analysis = await analyzeIncidentWithGemini(rawText, lat, lng);
+        if (analysis) {
+          setAiPowered(true);
+          const aiSteps = geminiToAgentSteps(analysis);
+
+          const incident: IncidentResponse = makeIncident({
+            description: rawText.slice(0, 80),
+            latitude: lat,
+            longitude: lng,
+            type: analysis.incidentType as IncidentResponse['type'],
+            severityLevel: analysis.severityLevel,
+            severityScore: analysis.severityScore,
+            predictedSpreadRadiusM: analysis.spreadRadiusM,
+            verificationConfidence: analysis.confidence,
+            status: 'REPORTED',
+          });
+          addIncident(incident);
+
+          for (const agentName of AGENT_PIPELINE_ORDER) {
+            setActiveAgent(agentName);
+            await new Promise((r) => setTimeout(r, 300 + Math.random() * 300));
+            const step: AgentStepResult = {
+              agentName,
+              outputJson: aiSteps[agentName] ?? simulateAgentOutput(agentName, incident),
+              confidence: analysis.confidence,
+              latencyMs: Math.floor(120 + Math.random() * 350),
+            };
+            setSteps((s) => [...s, step]);
+            setCompleted((c) => new Set(c).add(agentName));
+          }
+          setActiveAgent(null);
+          setRunning(false);
+          setRawText('');
+          setMediaFile(null);
+          return;
+        }
+      } catch {
+        // Fall through to mock simulation
       }
+    }
+
+    // Mock simulation fallback
+    const incident: IncidentResponse = makeIncident({
+      description: rawText.slice(0, 80),
+      latitude: lat,
+      longitude: lng,
+      status: 'REPORTED',
+    });
+    addIncident(incident);
+    for await (const step of runPipelineDemo(incident)) {
+      setActiveAgent(step.agentName as AgentName);
+      setSteps((s) => [...s, step]);
+      setCompleted((c) => new Set(c).add(step.agentName as AgentName));
     }
 
     setActiveAgent(null);
     setRunning(false);
     setRawText('');
+    setMediaFile(null);
   }
 
   return (
@@ -115,6 +181,11 @@ export default function Dashboard() {
             <p className="text-sm max-w-lg leading-relaxed" style={{ color: 'var(--color-ash)' }}>
               Nine specialized agents, one orchestrated pipeline — report, verify, predict, allocate,
               and coordinate in a single pass.
+              {isGeminiEnabled && (
+                <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-[10px] mono-tag font-semibold" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)' }}>
+                  <Sparkles size={9} /> Gemini AI Active
+                </span>
+              )}
             </p>
           </div>
 
@@ -170,23 +241,65 @@ export default function Dashboard() {
 
           {/* Report panel */}
           <Panel eyebrow="Submit → Orchestrate" title="New Incident Report">
-            <div className="flex gap-2.5">
-              <input
-                value={rawText}
-                onChange={(e) => setRawText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submitReport()}
-                placeholder="e.g. Water rising fast near Marina Rd, several homes flooded…"
-                disabled={running}
-                className="flex-1 input-light rounded-xl px-4 py-3 text-sm"
-              />
-              <button
-                onClick={submitReport}
-                disabled={running || !rawText.trim()}
-                className="btn-primary shrink-0 flex items-center gap-2 font-display font-semibold px-5 py-3 rounded-xl text-sm"
-              >
-                <Send size={14} />
-                {running ? 'Processing…' : 'Report'}
-              </button>
+            <div className="space-y-3">
+              <div className="flex gap-2.5">
+                <input
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitReport()}
+                  placeholder="e.g. Water rising fast near Marina Rd, several homes flooded…"
+                  disabled={running}
+                  className="flex-1 input-light rounded-xl px-4 py-3 text-sm"
+                />
+                <button
+                  onClick={submitReport}
+                  disabled={running || !rawText.trim()}
+                  className="btn-primary shrink-0 flex items-center gap-2 font-display font-semibold px-5 py-3 rounded-xl text-sm"
+                >
+                  <Send size={14} />
+                  {running ? 'Processing…' : 'Report'}
+                </button>
+              </div>
+
+              {/* Media upload row */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={running}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs mono-tag transition-all hover:scale-[1.02]"
+                  style={{
+                    background: 'rgba(220,38,38,0.05)',
+                    border: '1px solid rgba(220,38,38,0.15)',
+                    color: 'var(--color-ash)',
+                  }}
+                >
+                  <Image size={12} style={{ color: 'var(--color-signal)' }} />
+                  {mediaFile ? 'Change Photo' : 'Attach Photo / Video'}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {mediaFile && (
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {mediaFile.preview.startsWith('data:image') && (
+                      <img src={mediaFile.preview} alt="preview" className="w-8 h-8 rounded-lg object-cover border border-line" />
+                    )}
+                    <span className="text-xs truncate" style={{ color: 'var(--color-ash)' }}>{mediaFile.name}</span>
+                    <button
+                      onClick={() => { setMediaFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-gray-200 transition-all"
+                      style={{ color: 'var(--color-ash-dim)' }}
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mt-6">
@@ -196,6 +309,11 @@ export default function Dashboard() {
               >
                 <Activity size={11} style={{ color: 'var(--color-signal)' }} />
                 Agent Orchestration DAG
+                {aiPowered && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)' }}>
+                    <Sparkles size={8} /> AI-powered
+                  </span>
+                )}
               </div>
               <AgentPipeline activeAgent={activeAgent} completed={completed} />
 
@@ -219,16 +337,21 @@ export default function Dashboard() {
                         >
                           {AGENT_LABELS[s.agentName] ?? s.agentName}
                         </span>
-                        <span
-                          className="mono-tag px-1.5 py-0.5 rounded-md text-[9px] font-semibold"
-                          style={{
-                            color: 'var(--color-signal)',
-                            background: 'rgba(220,38,38,0.08)',
-                            border: '1px solid rgba(220,38,38,0.15)',
-                          }}
-                        >
-                          {s.latencyMs}ms
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {(() => { try { return (JSON.parse(s.outputJson) as Record<string, boolean>).aiPowered; } catch { return false; } })() && (
+                            <Sparkles size={9} style={{ color: '#7c3aed' }} />
+                          )}
+                          <span
+                            className="mono-tag px-1.5 py-0.5 rounded-md text-[9px] font-semibold"
+                            style={{
+                              color: 'var(--color-signal)',
+                              background: 'rgba(220,38,38,0.08)',
+                              border: '1px solid rgba(220,38,38,0.15)',
+                            }}
+                          >
+                            {s.latencyMs}ms
+                          </span>
+                        </div>
                       </div>
                       <div className="mono-tag truncate" style={{ color: 'var(--color-ash-dim)' }}>
                         {s.outputJson}

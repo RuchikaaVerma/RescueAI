@@ -12,22 +12,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The heart of the platform: routes an Incident through the specialized-agent
- * DAG described in the project overview —
- *
- *   Detection -> Verification -> [Severity/Spread || Infrastructure]
- *             -> Resource Planner -> [Medical || Logistics] -> Communication
- *
- * Every agent's output is persisted as an AgentAction (audit trail for Phase 2
- * research + Phase 3 compliance) and pushed live to the frontend over WebSocket.
- *
- * NOTE: agents currently run sequentially for readability/determinism in the MVP.
- * Severity/Infrastructure and Medical/Logistics are independent of each other and
- * are natural candidates to submit to the `agentTaskExecutor` pool in parallel —
- * left sequential here so the audit trail order is trivial to reason about; switch
- * to CompletableFuture.supplyAsync(..., agentTaskExecutor) once the pipeline is stable.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor

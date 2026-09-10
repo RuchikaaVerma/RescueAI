@@ -1,5 +1,22 @@
 // Mirrors com.rescueai.os.domain.enums exactly
 
+// ---- In-app Notification ----
+export interface AppNotification {
+  id: string;
+  type: 'CRITICAL_INCIDENT' | 'ALERT_SENT' | 'RESOURCE_UPDATE' | 'SYSTEM';
+  title: string;
+  body: string;
+  timestamp: string;
+  read: boolean;
+  incidentId?: string;
+}
+
+export interface GeoPosition {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+}
+
 export type Role =
   | 'CITIZEN' | 'HOSPITAL' | 'NGO' | 'GOVERNMENT' | 'VOLUNTEER'
   | 'COMMAND_CENTER' | 'SYSTEM_ADMIN';
