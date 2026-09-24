@@ -81,6 +81,81 @@ All agent decisions are **fully auditable** — stored with input/output JSON, c
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## 🏗️ RescueAI OS Architecture
+
+```mermaid
+flowchart TB
+    subgraph RESCUEAI["RescueAI OS — Agentic AI Disaster Response"]
+
+        subgraph FRONTEND["Frontend — rescueai-frontend"]
+            FE["React 19 + TypeScript"]
+            VITE["Vite"]
+            TAILWIND["Tailwind CSS v4"]
+            LEAFLET["Leaflet Maps"]
+            PWA["PWA Offline Support"]
+
+            FE --- VITE
+            FE --- TAILWIND
+            FE --- LEAFLET
+            FE --- PWA
+        end
+
+        subgraph BACKEND["Backend — rescueai-os-backend"]
+            API["Spring Boot 3.3 + Java 21"]
+            AUTH["Spring Security + JWT"]
+            REST["REST API"]
+            SERVICE["Business Services"]
+            ORCH["Multi-Agent Orchestrator"]
+            SAI["Spring AI"]
+            WS["WebSocket + STOMP"]
+
+            API --> AUTH
+            AUTH --> REST
+            REST --> SERVICE
+            SERVICE --> ORCH
+            ORCH --> SAI
+            SERVICE <--> WS
+        end
+
+        subgraph AGENTS["AI Agent System"]
+            DET["Detection Agent"]
+            VER["Verification Agent"]
+            SEV["Severity Prediction Agent"]
+            RES["Resource Planning Agent"]
+            LOG["Logistics Agent"]
+            MED["Medical Assistance Agent"]
+        end
+
+        subgraph DATABASE["Data Layer"]
+            PG[("PostgreSQL 16")]
+            FLY["Flyway Migrations"]
+            REDIS[("Redis 7")]
+            CACHE["Cache"]
+            PUB["Pub/Sub"]
+
+            PG --- FLY
+            REDIS --- CACHE
+            REDIS --- PUB
+        end
+
+        FE <-->|"HTTPS / REST"| API
+        FE <-->|"WebSocket / STOMP"| WS
+
+        SAI --> DET
+        SAI --> VER
+        SAI --> SEV
+        SAI --> RES
+        SAI --> LOG
+        SAI --> MED
+
+        ORCH -->|"Agent Tasks"| AGENTS
+        AGENTS -->|"Results"| ORCH
+
+        SERVICE <-->|"JPA / JDBC"| PG
+        SERVICE <-->|"Redis Client"| REDIS
+    end
+```
+
 The system uses a **multi-tenant** architecture — each organisation (state disaster authority, fire department, NGO) is an isolated `Tenant` with its own users, incidents, resources, and hospitals.
 
 ---
